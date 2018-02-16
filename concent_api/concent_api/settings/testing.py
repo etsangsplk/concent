@@ -36,3 +36,9 @@ CONCENT_FEATURES = [
 ]
 
 STORAGE_CLUSTER_ADDRESS = 'http://localhost/'
+
+CONCENT_FEES = {
+    'FORCE_REPORT_COMPUTED_TASK':   None,
+    'FORCE_GET_TASK_RESULT':        None,
+    'FORCE_SUBTASK_RESULTS':        None,
+}

@@ -12,6 +12,7 @@ from golem_messages                 import message
 from golem_messages                 import shortcuts
 from golem_messages.datastructures  import MessageHeader
 from golem_messages.exceptions      import MessageError
+from golem_sci                      import interface
 
 from core                           import exceptions
 from gatekeeper.constants           import GATEKEEPER_DOWNLOAD_PATH
@@ -212,6 +213,11 @@ def receive_out_of_band(request, _message):
 
 
 def handle_send_force_report_computed_task(request, client_message):
+    if not is_fee_paid(client_message['eth_account'], 'FORCE_REPORT_COMPUTED_TASK'):
+        return message.ServiceRefused(
+            reason = message.ServiceRefused.REASON.TooSmallCommunicationPayment
+        )
+
     current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
@@ -356,6 +362,11 @@ def handle_send_reject_report_computed_task(request, client_message):
 def handle_send_force_get_task_result(request, client_message: message.concents.ForceGetTaskResult) -> message.concents:
     assert client_message.TYPE in message.registered_message_types
 
+    if not is_fee_paid(client_message.report_computed_task['eth_account'], 'FORCE_GET_TASK_RESULT'):
+        return message.ServiceRefused(
+            reason = message.ServiceRefused.REASON.TooSmallCommunicationPayment
+        )
+
     current_time           = get_current_utc_timestamp()
     client_public_key      = decode_client_public_key(request)
     other_party_public_key = decode_other_party_public_key(request)
@@ -406,6 +417,11 @@ def handle_send_force_get_task_result(request, client_message: message.concents.
 
 def handle_send_force_subtask_results(request, client_message: message.concents.ForceSubtaskResults):
     assert client_message.TYPE in message.registered_message_types
+
+    if not is_fee_paid(None, 'FORCE_SUBTASK_RESULTS'):
+        return message.ServiceRefused(
+            reason = message.ServiceRefused.REASON.TooSmallCommunicationPayment
+        )
 
     current_time           = int(datetime.datetime.now().timestamp())
     client_public_key      = decode_client_public_key(request)
@@ -884,3 +900,17 @@ def tmp_is_provider_account_status_positive(request):
         return bool(request.META['HTTP_TEMPORARY_ACCOUNT_FUNDS'])
     except KeyError:
         return False
+
+
+def is_fee_paid(eth_account: str, case: str) -> bool:
+    assert case in settings.CONCENT_FEES_BY_CASE
+
+    if settings.CONCENT_FEES_BY_CASE[case] in [None, 0]:
+        return True
+
+    # FIXME: Add more validation of eth_account
+    if eth_account is None:
+        return False
+
+    current_deposit = interface.get_deposit_value(eth_account)
+    return current_deposit >= settings.CONCENT_FEES_BY_CASE[case]
