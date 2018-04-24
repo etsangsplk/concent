@@ -155,3 +155,50 @@ def validate_list_task_to_compute_ids(subtask_results_accepted_list):
     for task_to_compute in subtask_results_accepted_list:
         subtask_ids.append(task_to_compute.subtask_id + ':' + task_to_compute.task_id)
     return len(subtask_ids) == len(set(subtask_ids))
+
+
+def validate_golem_message_reject(
+    reject_report_computed_task: message.RejectReportComputedTask,
+    provider_public_key: bytes,
+):
+    if reject_report_computed_task.reason in [
+        message.RejectReportComputedTask.REASON.TaskTimeLimitExceeded,
+        message.RejectReportComputedTask.REASON.SubtaskTimeLimitExceeded,
+    ]:
+        ensure_fields_are_not_set(reject_report_computed_task, ['cannot_compute_task', 'task_failure'])
+    elif reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
+        if not isinstance(reject_report_computed_task.cannot_compute_task, message.CannotComputeTask):
+            raise Http400("Expected CannotComputeTask.")
+        ensure_fields_are_not_set(reject_report_computed_task, ['task_failure'])
+        validate_task_to_compute(reject_report_computed_task.cannot_compute_task.task_to_compute)
+        validate_list_of_identical_task_to_compute([
+            reject_report_computed_task.task_to_compute,
+            reject_report_computed_task.cannot_compute_task.task_to_compute,
+        ])
+        validate_golem_message_signed_with_key(
+            reject_report_computed_task.cannot_compute_task,
+            provider_public_key,
+        )
+    elif reject_report_computed_task.reason == message.RejectReportComputedTask.REASON.GotMessageTaskFailure:
+        if not isinstance(reject_report_computed_task.task_failure, message.TaskFailure):
+            raise Http400("Expected TaskFailure.")
+        ensure_fields_are_not_set(reject_report_computed_task, ['cannot_compute_task'])
+        validate_task_to_compute(reject_report_computed_task.task_failure.task_to_compute)
+        validate_list_of_identical_task_to_compute([
+            reject_report_computed_task.task_to_compute,
+            reject_report_computed_task.task_failure.task_to_compute,
+        ])
+        validate_golem_message_signed_with_key(
+            reject_report_computed_task.task_failure,
+            provider_public_key,
+        )
+    else:
+        raise Http400("Invalid reason for RejectReportComputedTask")
+    validate_task_to_compute(reject_report_computed_task.task_to_compute)
+
+
+def ensure_fields_are_not_set(golem_message, field_names):
+    for name in field_names:
+        field = getattr(golem_message, name)
+        if field is not None:
+            raise Http400(f"{name} field should not be set in this particular {golem_message.__class__}")

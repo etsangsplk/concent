@@ -34,6 +34,7 @@ from core.transfer_operations import store_pending_message
 from core.transfer_operations import create_file_transfer_token_for_golem_client
 from core.validation import validate_all_messages_identical
 from core.validation import validate_ethereum_addresses
+from core.validation import validate_golem_message_reject
 from core.validation import validate_golem_message_signed_with_key
 from core.validation import validate_golem_message_subtask_results_rejected
 from core.validation import validate_report_computed_task_time_window
@@ -173,12 +174,6 @@ def handle_send_ack_report_computed_task(client_message):
 
 
 def handle_send_reject_report_computed_task(client_message):
-    if (
-        isinstance(client_message.cannot_compute_task, message.CannotComputeTask) and
-        isinstance(client_message.task_failure, message.TaskFailure)
-    ):
-        raise Http400("RejectReportComputedTask cannot contain CannotComputeTask and TaskFailure at the same time.")
-
     # Validate if task_to_compute is valid instance of TaskToCompute.
     task_to_compute = client_message.task_to_compute
     validate_task_to_compute(task_to_compute)
@@ -192,38 +187,9 @@ def handle_send_reject_report_computed_task(client_message):
         requestor_public_key,
     )
 
+    validate_golem_message_reject(client_message, provider_public_key)
+
     tasks_to_compute = [task_to_compute]
-
-    # If reason is GotMessageCannotComputeTask,
-    # cannot_compute_task is instance of CannotComputeTask signed by the provider.
-    if client_message.reason == message.RejectReportComputedTask.REASON.GotMessageCannotComputeTask:
-        if not isinstance(client_message.cannot_compute_task, message.CannotComputeTask):
-            raise Http400("Expected CannotComputeTask.")
-        validate_task_to_compute(client_message.cannot_compute_task.task_to_compute)
-        validate_golem_message_signed_with_key(
-            client_message.cannot_compute_task,
-            provider_public_key,
-        )
-        tasks_to_compute.append(client_message.cannot_compute_task.task_to_compute)
-
-    # If reason is GotMessageTaskFailure,
-    # task_failure is instance of TaskFailure signed by the provider.
-    elif client_message.reason == message.RejectReportComputedTask.REASON.GotMessageTaskFailure:
-        if not isinstance(client_message.task_failure, message.TaskFailure):
-            raise Http400("Expected TaskFailure.")
-        validate_task_to_compute(client_message.task_failure.task_to_compute)
-        validate_golem_message_signed_with_key(
-            client_message.task_failure,
-            provider_public_key,
-        )
-        tasks_to_compute.append(client_message.task_failure.task_to_compute)
-
-    # RejectReportComputedTask should contain empty cannot_compute_task and task_failure
-    else:
-        if client_message.cannot_compute_task is not None or client_message.task_failure is not None:
-            raise Http400("RejectReportComputedTask require empty 'cannot_compute_task' and 'task_failure' with {} reason.".format(
-                client_message.reason.name
-            ))
 
     try:
         subtask = Subtask.objects.get(
