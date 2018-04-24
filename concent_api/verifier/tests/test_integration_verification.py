@@ -12,6 +12,7 @@ from utils.helpers import get_storage_result_file_path
 from utils.helpers import get_storage_source_file_path
 from utils.testing_helpers import generate_ecc_key_pair
 from ..tasks import blender_verification_order
+from ..utils import generate_blender_output_file_name
 
 
 (CONCENT_PRIVATE_KEY, CONCENT_PUBLIC_KEY) = generate_ecc_key_pair()
@@ -88,7 +89,12 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
             mock.patch('verifier.tasks.unpack_archive', autospec=True) as mock_unpack_archive,\
             mock.patch('core.tasks.verification_result.delay', autospec=True) as mock_verification_result,\
             mock.patch('verifier.tasks.run_blender', mock_run_blender),\
-            mock.patch('verifier.tasks.get_files_list_from_archive') as mock_get_files_list_from_archive,\
+            mock.patch('verifier.tasks.get_files_list_from_archive') as mock_get_files_list_from_archive, \
+            mock.patch(
+                'verifier.tasks.get_file_size_and_checksum',
+                autospec=True,
+                return_value=(1, 'sha1:356a192b7913b04c54574d18c28d46e6395428ab')
+            ) as mock_get_file_size_and_checksum, \
             mock.patch('verifier.tasks.delete_file') as mock_delete_file:  # noqa: E125
             blender_verification_order(
                 subtask_id=self.compute_task_def['subtask_id'],
@@ -110,6 +116,9 @@ class VerifierVerificationIntegrationTest(ConcentIntegrationTestCase):
         self.assertEqual(mock_unpack_archive.call_count, 2)
         mock_get_files_list_from_archive.assert_called_once()
         mock_delete_file.assert_not_called()
+        mock_get_file_size_and_checksum.assert_called_once_with(
+            generate_blender_output_file_name(self.compute_task_def['extra_data']['scene_file'])
+        )
         mock_verification_result.assert_called_once_with(
             self.compute_task_def['subtask_id'],
             VerificationResult.MATCH.name,

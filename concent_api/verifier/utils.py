@@ -1,4 +1,5 @@
 from base64 import b64encode
+import hashlib
 import logging
 import os
 import subprocess
@@ -96,3 +97,46 @@ def delete_file(file_path):
             os.unlink(file_path)
     except OSError as exception:
         logger.warning(f'File with path {file_path} was not deleted, exception: {exception}')
+
+
+def upload_file_to_storage_cluster(file_content, file_path, upload_token):
+    dumped_upload_token = dump(upload_token, None, settings.CONCENT_PUBLIC_KEY)
+    b64_encoded_token = b64encode(dumped_upload_token).decode()
+    headers = {
+        'Authorization': 'Golem ' + b64_encoded_token,
+        'Concent-Auth': b64encode(
+            dump(
+                message.concents.ClientAuthorization(
+                    client_public_key=settings.CONCENT_PUBLIC_KEY,
+                ),
+                settings.CONCENT_PRIVATE_KEY,
+                settings.CONCENT_PUBLIC_KEY
+            ),
+        ).decode(),
+        'Concent-upload-path': file_path,
+        'Content-Type': 'application/octet-stream'
+    }
+    return requests.post(
+        "{}upload/".format(settings.STORAGE_CLUSTER_ADDRESS),
+        headers=headers,
+        data=file_content,
+        verify=False
+    )
+
+
+def generate_blender_output_file_name(scene_file):
+    return f'{settings.VERIFIER_STORAGE_PATH}/{scene_file}_out'
+
+
+def generate_upload_file_name(subtask_id):
+    return f'blender/verifier-output/{subtask_id}/{subtask_id}'
+
+
+def get_file_size_and_checksum(file_path):
+    with open(file_path, 'r') as file:
+        file_content = file.read()
+
+    return (
+        len(file_content),
+        'sha1:' + hashlib.sha1(file_content.encode()).hexdigest(),
+    )
