@@ -2,7 +2,10 @@ from enum import Enum
 
 from celery import shared_task
 
+from core.models import Subtask
+from utils.helpers import deserialize_message
 from verifier.tasks import blender_verification_order
+
 from .models import BlenderSubtaskDefinition
 from .models import UploadReport
 from .models import VerificationRequest
@@ -48,6 +51,12 @@ def blender_verification_request(
     # and result_package_path in the VerificationRequest have reports.
     verification_request.refresh_from_db()
 
+    subtask = Subtask.objects.get(
+        subtask_id = subtask_id,
+    )
+
+    report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
+
     if (
         verification_request.upload_reports.filter(path=verification_request.source_package_path).exists() and
         verification_request.upload_reports.filter(path=verification_request.result_package_path).exists()
@@ -56,7 +65,11 @@ def blender_verification_request(
         blender_verification_order.delay(
             verification_request.subtask_id,
             verification_request.source_package_path,
+            report_computed_task.task_to_compute.size,
+            report_computed_task.task_to_compute.package_hash,
             verification_request.result_package_path,
+            report_computed_task.size,
+            report_computed_task.package_hash,
             verification_request.blender_subtask_definition.output_format,
             verification_request.blender_subtask_definition.scene_file,
         )
