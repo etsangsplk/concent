@@ -16,10 +16,10 @@ from core.models import Client
 from core.models import PaymentInfo
 from core.models import PendingResponse
 from core.models import Subtask
+from core.utils import calculate_maximum_download_time
+from core.utils import calculate_subtask_verification_time
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils import logging
-from utils.helpers import calculate_maximum_download_time
-from utils.helpers import calculate_subtask_verification_time
 from utils.helpers import deserialize_message
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_result_file_path
@@ -163,7 +163,6 @@ def _create_file_transfer_token(
     operation: FileTransferToken.Operation = None,
     token_expiration_deadline: Optional[int] = None,
 ) -> FileTransferToken:
-
     assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
     assert isinstance(authorized_client_public_key, bytes)
     assert isinstance(token_expiration_deadline, int) and not isinstance(token_expiration_deadline, bool) or token_expiration_deadline is None
