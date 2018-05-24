@@ -83,3 +83,28 @@ def blender_verification_request(
             verification_request.blender_subtask_definition.output_format,
             verification_request.blender_subtask_definition.scene_file,
         )
+
+
+@shared_task
+def upload_acknowledged(subtask_id: str):
+    assert isinstance(subtask_id, str)
+
+    try:
+        verification_request = VerificationRequest.objects.get(subtask_id=subtask_id)
+    except VerificationRequest.DoesNotExist:
+        logging.error(
+            f'Task `upload_acknowledged` tried to get VerificationRequest object with ID {subtask_id} but it does not exist.'
+        )
+        return
+
+    verification_request.upload_acknowledged = True
+    verification_request.full_clean()
+    verification_request.save()
+
+    blender_verification_order.delay(
+        verification_request.subtask_id,
+        verification_request.source_package_path,
+        verification_request.result_package_path,
+        verification_request.blender_subtask_definition.output_format,
+        verification_request.blender_subtask_definition.scene_file,
+    )

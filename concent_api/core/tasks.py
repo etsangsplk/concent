@@ -7,5 +7,5 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
-def upload_finished(subtask_id: str):  # pylint: disable=unused-argument
+def upload_finished(subtask_id: str):
     pass
