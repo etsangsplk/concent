@@ -3,6 +3,7 @@ import logging
 from celery import shared_task
 
 from core.models import Subtask
+from utils.decorators import provides_concent_feature
 from utils.helpers import deserialize_message
 from verifier.tasks import blender_verification_order
 from .models import BlenderSubtaskDefinition
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
+@provides_concent_feature('conductor-worker')
 def blender_verification_request(
     subtask_id:             str,
     source_package_path:    str,
