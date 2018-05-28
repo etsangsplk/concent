@@ -49,13 +49,14 @@ def blender_verification_order(
     result_package_path: str,
     result_size: int,
     result_package_hash: str,
-    output_format: BlenderSubtaskDefinition.OutputFormat,  # pylint: disable=unused-argument
+    output_format: str,
     scene_file: str,  # pylint: disable=unused-argument
 ):
     assert source_package_path != result_package_path
     assert source_package_hash != result_package_hash
     assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
     assert isinstance(subtask_id, str)
+    assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
 
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(
@@ -93,18 +94,18 @@ def blender_verification_order(
             logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
             verification_result.delay(
                 subtask_id,
-                VerificationResult.ERROR,
+                VerificationResult.ERROR.name,
                 str(exception),
-                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED
+                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name
             )
             return
         except Exception as exception:
             logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
             verification_result.delay(
                 subtask_id,
-                VerificationResult.ERROR,
+                VerificationResult.ERROR.name,
                 str(exception),
-                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED
+                ErrorCode.VERIFIIER_FILE_DOWNLOAD_FAILED.name
             )
             raise
 
@@ -126,7 +127,7 @@ def blender_verification_order(
 
     verification_result.delay(
         subtask_id,
-        VerificationResult.MATCH,
+        VerificationResult.MATCH.name,
     )
 
 
@@ -135,17 +136,21 @@ def blender_verification_order(
 def verification_result(
     self,
     subtask_id: str,
-    result: VerificationResult,
+    result: str,
     error_message: Optional[str] = None,
-    error_code: Optional[ErrorCode] = None,
+    error_code: Optional[str] = None,
 ):
     logger.info(f'verification_result_task starts with: SUBTASK_ID {subtask_id} -- RESULT {result}')
 
     assert isinstance(subtask_id, str)
-    assert isinstance(result, VerificationResult)
+    assert isinstance(result, str)
+    assert result in VerificationResult.__members__.keys()
     assert isinstance(error_message, (str, type(None)))
-    assert isinstance(error_code, (ErrorCode, type(None)))
-    assert all([error_message, error_code]) if result == VerificationResult.ERROR else True
+    assert isinstance(error_code, (str, type(None)))
+
+    result_enum = VerificationResult[result]
+
+    assert result_enum != VerificationResult.ERROR or all([error_message, error_code])
 
     # Worker locks database row corresponding to the subtask in the subtask table.
     try:
@@ -200,7 +205,7 @@ def verification_result(
             )
         return
 
-    if result == VerificationResult.MISMATCH:
+    if result_enum == VerificationResult.MISMATCH:
         # Worker adds SubtaskResultsRejected to provider's and requestor's receive queues (both out-of-band)
         for public_key in [subtask.provider.public_key_bytes, subtask.requestor.public_key_bytes]:
             store_pending_message(
@@ -216,12 +221,12 @@ def verification_result(
         subtask.full_clean()
         subtask.save()
 
-    elif result in (VerificationResult.MATCH, VerificationResult.ERROR):
+    elif result_enum in (VerificationResult.MATCH, VerificationResult.ERROR):
         # Worker logs the error code and message
-        if result == VerificationResult.ERROR:
+        if result_enum == VerificationResult.ERROR:
             logger.info(
                 f'verification_result_task processing error result with: '
-                f'SUBTASK_ID {subtask_id} -- RESULT {result} -- ERROR MESSAGE {error_message} -- ERROR CODE {error_code}'
+                f'SUBTASK_ID {subtask_id} -- RESULT {result_enum.name} -- ERROR MESSAGE {error_message} -- ERROR CODE {error_code}'
             )
 
         task_to_compute = deserialize_message(subtask.task_to_compute.data.tobytes())
@@ -249,4 +254,4 @@ def verification_result(
             state=Subtask.SubtaskState.ACCEPTED.name,  # pylint: disable=no-member
         )
 
-    logger.info(f'verification_result_task ends with: SUBTASK_ID {subtask_id} -- RESULT {result}')
+    logger.info(f'verification_result_task ends with: SUBTASK_ID {subtask_id} -- RESULT {result_enum.name}')
