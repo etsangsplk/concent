@@ -120,7 +120,7 @@ class ConcentIntegrationTestCase(TestCase):
         subtask_id      = '1',
         task_to_compute = None,
         size            = 1,
-        package_hash    = None,
+        package_hash: str = 'sha1:4452d71687b6bc2c9389c3349fdc17fbd73b833b',
         timestamp       = None,
     ):
         """ Returns ReportComputedTask deserialized. """
