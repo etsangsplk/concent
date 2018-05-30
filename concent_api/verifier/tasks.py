@@ -53,6 +53,9 @@ def blender_verification_order(
     scene_file: str,  # pylint: disable=unused-argument
 ):
     assert source_package_path != result_package_path
+    assert source_package_hash != result_package_hash
+    assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
+    assert isinstance(subtask_id, str)
 
     # Generate a FileTransferToken valid for a download of any file listed in the order.
     file_transfer_token = create_file_transfer_token_for_concent(

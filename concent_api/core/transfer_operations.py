@@ -108,9 +108,9 @@ def store_pending_message(
 
 def create_file_transfer_token_for_concent(
     subtask_id: str = None,
-    source_package_path: str = None,
-    source_size: int = None,
-    source_package_hash: str = None,
+    source_package_path: Optional[str] = None,
+    source_size: Optional[int] = None,
+    source_package_hash: Optional[str] = None,
     result_package_path: str = None,
     result_size: int = None,
     result_package_hash: str = None,
@@ -135,8 +135,8 @@ def create_file_transfer_token_for_golem_client(
     authorized_client_public_key: bytes,
     operation: FileTransferToken.Operation,
 ) -> FileTransferToken:
-    subtask_id=report_computed_task.task_to_compute.compute_task_def['subtask_id']
-    task_id=report_computed_task.task_to_compute.compute_task_def['task_id']
+    subtask_id = report_computed_task.task_to_compute.compute_task_def['subtask_id']
+    task_id = report_computed_task.task_to_compute.compute_task_def['task_id']
     return _create_file_transfer_token(
         subtask_id=subtask_id,
         source_package_path=get_storage_source_file_path(task_id, subtask_id),
@@ -153,9 +153,9 @@ def create_file_transfer_token_for_golem_client(
 
 def _create_file_transfer_token(
     subtask_id: str = None,
-    source_package_path: str = None,
-    source_size: int = None,
-    source_package_hash: str = None,
+    source_package_path: Optional[str] = None,
+    source_size: Optional[int] = None,
+    source_package_hash: Optional[str] = None,
     result_package_path: str = None,
     result_size: int = None,
     result_package_hash: str = None,
@@ -164,7 +164,7 @@ def _create_file_transfer_token(
     token_expiration_deadline: Optional[int] = None,
 ) -> FileTransferToken:
 
-    assert (source_size and source_package_hash) or (result_size and result_package_hash)
+    assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
     assert isinstance(authorized_client_public_key, bytes)
     assert isinstance(token_expiration_deadline, int) and not isinstance(token_expiration_deadline, bool) or token_expiration_deadline is None
     assert operation in [FileTransferToken.Operation.download, FileTransferToken.Operation.upload]
@@ -285,14 +285,14 @@ def calculate_token_expiration_deadline(
 ) -> int:
     if operation == FileTransferToken.Operation.upload:
         token_expiration_deadline = (
-                report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                3 * settings.CONCENT_MESSAGING_TIME +
-                2 * calculate_maximum_download_time(report_computed_task.size)
+            report_computed_task.task_to_compute.compute_task_def['deadline'] +
+            3 * settings.CONCENT_MESSAGING_TIME +
+            2 * calculate_maximum_download_time(report_computed_task.size)
         )
 
     elif operation == FileTransferToken.Operation.download:
         token_expiration_deadline = (
-                report_computed_task.task_to_compute.compute_task_def['deadline'] +
-                calculate_subtask_verification_time(report_computed_task)
+            report_computed_task.task_to_compute.compute_task_def['deadline'] +
+            calculate_subtask_verification_time(report_computed_task)
         )
     return token_expiration_deadline
