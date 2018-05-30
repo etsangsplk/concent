@@ -291,8 +291,8 @@ class ConcentIntegrationTestCase(TestCase):
         self.assertEqual(subtask.provider.public_key,  provider_key)
         self.assertEqual(subtask.requestor.public_key, requestor_key)
 
-        assert Client.objects.filter(public_key = provider_key).exists()
-        assert Client.objects.filter(public_key = requestor_key).exists()
+        assert Client.objects.filter(public_key = provider_key).exists()  # pylint: disable=no-member
+        assert Client.objects.filter(public_key = requestor_key).exists()  # pylint: disable=no-member
 
         subtask_deadline = None
         if subtask.state_enum in Subtask.ACTIVE_STATES:

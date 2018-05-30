@@ -8,7 +8,6 @@ from golem_messages import message
 from core.message_handlers import store_subtask
 from core.models import Subtask
 from core.tests.utils import ConcentIntegrationTestCase
-
 from ..models       import BlenderSubtaskDefinition
 from ..models       import UploadReport
 from ..models       import VerificationRequest
