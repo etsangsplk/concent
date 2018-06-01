@@ -317,6 +317,8 @@ def create_signed_task_to_compute(
         compute_task_def['task_id'] = task_id
         compute_task_def['subtask_id'] = subtask_id
         compute_task_def['deadline'] = deadline
+        compute_task_def['extra_data']['output_format'] = 'jpg'
+        compute_task_def['extra_data']['scene_file'] = 'test.jpg'
         task_to_compute = TaskToCompute(
             provider_public_key=provider_public_key if provider_public_key is not None else PROVIDER_PUBLIC_KEY,
             requestor_public_key=requestor_public_key if requestor_public_key is not None else REQUESTOR_PUBLIC_KEY,

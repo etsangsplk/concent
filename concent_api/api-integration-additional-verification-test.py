@@ -79,7 +79,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
 
     file_content = task_id
     file_size = len(file_content)
-    file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_check_sum_1 = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_check_sum_2 = 'sha1:' + hashlib.sha1(subtask_id.encode()).hexdigest()
 
     ack_subtask_results_verify = api_request(
         cluster_url,
@@ -93,9 +94,9 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
             cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=file_size,
-            report_computed_task_package_hash=file_check_sum,
+            report_computed_task_package_hash=file_check_sum_1,
             task_to_compute_size=file_size,
-            task_to_compute_package_hash=file_check_sum,
+            task_to_compute_package_hash=file_check_sum_2,
         ),
         headers = {
             'Content-Type': 'application/octet-stream',
@@ -104,6 +105,8 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         expected_message_type=message.concents.AckSubtaskResultsVerify.TYPE,
         expected_content_type='application/octet-stream',
     )
+
+    exit()
 
     for file in ack_subtask_results_verify.file_transfer_token.files:
         response = upload_file_to_storage_cluster(
@@ -118,7 +121,7 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
         assert_condition(response.status_code, 200, 'File has not been stored on cluster')
         print('\nUploaded file with task_id {}. Checksum of this file is {}, and size of this file is {}.\n'.format(
             task_id,
-            file_check_sum,
+            file['checksum'],
             file_size
         ))
 
@@ -155,12 +158,14 @@ def test_case_1_test_for_positive_case(cluster_consts, cluster_url, test_id):
 
 @count_fails
 def test_case_2_test_for_invalid_reason(cluster_consts, cluster_url, test_id):
+    exit()
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     file_content = task_id
     file_size = len(file_content)
-    file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_check_sum_1 = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_check_sum_2 = 'sha1:' + hashlib.sha1(subtask_id.encode()).hexdigest()
 
     api_request(
         cluster_url,
@@ -174,9 +179,9 @@ def test_case_2_test_for_invalid_reason(cluster_consts, cluster_url, test_id):
             cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
             report_computed_task_size=file_size,
-            report_computed_task_package_hash=file_check_sum,
+            report_computed_task_package_hash=file_check_sum_1,
             task_to_compute_size=file_size,
-            task_to_compute_package_hash=file_check_sum,
+            task_to_compute_package_hash=file_check_sum_2,
         ),
         headers = {
             'Content-Type': 'application/octet-stream',
@@ -189,6 +194,7 @@ def test_case_2_test_for_invalid_reason(cluster_consts, cluster_url, test_id):
 
 @count_fails
 def test_case_3_test_for_mismatch(cluster_consts, cluster_url, test_id):
+    exit()
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
@@ -288,12 +294,14 @@ def test_case_3_test_for_mismatch(cluster_consts, cluster_url, test_id):
 
 @count_fails
 def test_case_4_timeout(cluster_consts, cluster_url, test_id):
+    exit()
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
     file_content = task_id
     file_size = len(file_content)
-    file_check_sum = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_check_sum_1 = 'sha1:' + hashlib.sha1(file_content.encode()).hexdigest()
+    file_check_sum_2 = 'sha1:' + hashlib.sha1(subtask_id.encode()).hexdigest()
 
     api_request(
         cluster_url,
@@ -307,9 +315,9 @@ def test_case_4_timeout(cluster_consts, cluster_url, test_id):
             cluster_consts,
             reason=message.tasks.SubtaskResultsRejected.REASON.VerificationNegative,
             report_computed_task_size=file_size,
-            report_computed_task_package_hash=file_check_sum,
+            report_computed_task_package_hash=file_check_sum_1,
             task_to_compute_size=file_size,
-            task_to_compute_package_hash=file_check_sum,
+            task_to_compute_package_hash=file_check_sum_2,
         ),
         headers = {
             'Content-Type': 'application/octet-stream',

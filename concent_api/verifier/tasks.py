@@ -55,7 +55,7 @@ def blender_verification_order(
     scene_file: str,  # pylint: disable=unused-argument
 ):
     assert source_package_path != result_package_path
-    assert source_package_hash != result_package_hash
+    #assert source_package_hash != result_package_hash  # TODO: Uncomment
     assert (source_size and source_package_hash and source_package_path) or (result_size and result_package_hash and result_package_path)
     assert isinstance(subtask_id, str)
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
@@ -88,12 +88,12 @@ def blender_verification_order(
                 cluster_response,
                 os.path.join(
                     settings.VERIFIER_STORAGE_PATH,
-                    os.path.split(file_path)[0],
+                    os.path.split(file_path)[1],  # TODO: This can be done in a better way
                 )
             )
 
         except (OSError, HTTPError) as exception:
-            logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            logger.info(f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
@@ -102,7 +102,7 @@ def blender_verification_order(
             )
             return
         except Exception as exception:
-            logger.info('blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
+            logger.info(f'blender_verification_order for SUBTASK_ID {subtask_id} failed with error {exception}.')
             verification_result.delay(
                 subtask_id,
                 VerificationResult.ERROR.name,
@@ -117,13 +117,15 @@ def blender_verification_order(
     # Verifier unpacks the archive with project source.
     for file_path in (source_package_path, result_package_path):
         try:
-            unpack_archive(file_path)
+            unpack_archive(
+                os.path.split(file_path)[1]  # TODO: This can be done in a better way
+            )
         except (OSError, BadZipFile) as e:
             verification_result.delay(
                 subtask_id,
-                VerificationResult.ERROR,
+                VerificationResult.ERROR.name,
                 str(e),
-                ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED
+                ErrorCode.VERIFIIER_UNPACKING_ARCHIVE_FAILED.name
             )
             return
 

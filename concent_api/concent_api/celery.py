@@ -13,11 +13,11 @@ app = Celery('concent_api')
 #   should have a `CELERY_` prefix.
 app.config_from_object('django.conf:settings', namespace = 'CELERY')
 
-app.conf.task_create_missing_queues = True
-app.conf.task_routes = ([
-    ('verifier.tasks.verification_result', {'queue': 'concent'}),
-    ('conductor.tasks.blender_verification_request', {'queue': 'conductor'}),
-    ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
-],)
-app.conf.task_default_queue = 'non_existing'
-app.conf.task_create_missing_queues = False
+#app.conf.task_create_missing_queues = True
+#app.conf.task_routes = ([
+#    ('verifier.tasks.verification_result', {'queue': 'concent'}),
+#    ('conductor.tasks.blender_verification_request', {'queue': 'conductor'}),
+#    ('verifier.tasks.blender_verification_order', {'queue': 'verifier'}),
+#],)
+#app.conf.task_default_queue = 'non_existing'
+#app.conf.task_create_missing_queues = False

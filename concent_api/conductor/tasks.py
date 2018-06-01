@@ -23,6 +23,9 @@ def blender_verification_request(
     output_format:          str,
     scene_file:             str,
 ):
+    assert isinstance(output_format, str)
+
+    output_format = output_format.upper()
     assert output_format in BlenderSubtaskDefinition.OutputFormat.__members__.keys()
 
     # The app creates a new instance of VerificationRequest in the database
@@ -97,14 +100,28 @@ def upload_acknowledged(subtask_id: str):
         )
         return
 
+    try:
+        subtask = Subtask.objects.get(
+            subtask_id = subtask_id,
+        )
+    except Subtask.DoesNotExist:
+        logger.error(f'Task `blender_verification_request` tried to get Subtask object with ID {subtask_id} but it does not exist.')
+        return
+
     verification_request.upload_acknowledged = True
     verification_request.full_clean()
     verification_request.save()
 
+    report_computed_task = deserialize_message(subtask.report_computed_task.data.tobytes())
+
     blender_verification_order.delay(
         verification_request.subtask_id,
         verification_request.source_package_path,
+        report_computed_task.task_to_compute.size,
+        report_computed_task.task_to_compute.package_hash,
         verification_request.result_package_path,
+        report_computed_task.size,
+        report_computed_task.package_hash,
         verification_request.blender_subtask_definition.output_format,
         verification_request.blender_subtask_definition.scene_file,
     )

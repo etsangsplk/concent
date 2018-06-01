@@ -126,7 +126,7 @@ def create_file_transfer_token_for_concent(
         result_package_hash=result_package_hash,
         authorized_client_public_key=settings.CONCENT_PUBLIC_KEY,
         operation=operation,
-        token_expiration_deadline=get_current_utc_timestamp() + calculate_maximum_download_time(result_size)
+        token_expiration_deadline=get_current_utc_timestamp() + calculate_maximum_download_time(result_size, settings.MINIMUM_UPLOAD_RATE)
     )
 
 
@@ -286,7 +286,7 @@ def calculate_token_expiration_deadline(
         token_expiration_deadline = (
             report_computed_task.task_to_compute.compute_task_def['deadline'] +
             3 * settings.CONCENT_MESSAGING_TIME +
-            2 * calculate_maximum_download_time(report_computed_task.size)
+            2 * calculate_maximum_download_time(report_computed_task.size, settings.MINIMUM_UPLOAD_RATE)
         )
 
     elif operation == FileTransferToken.Operation.download:
