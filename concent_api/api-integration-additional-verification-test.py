@@ -199,7 +199,7 @@ def test_case_2_test_for_resources_failure_reason(cluster_consts, cluster_url, t
             subtask_id,
             current_time,
             cluster_consts,
-            reason=message.tasks.SubtaskResultsRejected.REASON.ConcentResourcesFailure,
+            reason=message.tasks.SubtaskResultsRejected.REASON.ResourcesFailure,
             report_computed_task_size=file_size,
             report_computed_task_package_hash=file_check_sum,
             task_to_compute_size=file_size,
@@ -310,7 +310,7 @@ def test_case_4_test_for_duplicated_request(cluster_consts, cluster_url, test_id
 
 
 @count_fails
-def test_case_5_test_requestor_status_postive(cluster_consts, cluster_url, test_id):
+def test_case_5_test_requestor_status_account_negative(cluster_consts, cluster_url, test_id):
     current_time = get_current_utc_timestamp()
     (subtask_id, task_id) = get_task_id_and_subtask_id(test_id, 'existing_file')
 
