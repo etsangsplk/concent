@@ -27,6 +27,8 @@ import requests
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "concent_api.settings")
 
+#  TODO NEGATIVE TEST CASES
+
 
 def get_subtask_results_verify(
     task_id,
