@@ -79,6 +79,9 @@ class CoreTaskTestCase(ConcentIntegrationTestCase):
         )
 
     def test_that_upload_acknowledged_task_should_log_error_when_verification_request_with_given_subtask_id_does_not_exist(self):
+        report_computed_task = self._get_deserialized_report_computed_task(
+            subtask_id=self.compute_task_def['subtask_id'],
+        )
         with mock.patch('conductor.tasks.logging.error') as mock_logging_error:
             upload_acknowledged(
                 subtask_id='non_existing_subtask_id',
