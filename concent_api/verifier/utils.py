@@ -1,5 +1,4 @@
 from base64 import b64encode
-import hashlib
 import logging
 import os
 import subprocess
@@ -130,13 +129,3 @@ def generate_blender_output_file_name(scene_file):
 
 def generate_upload_file_name(subtask_id):
     return f'blender/verifier-output/{subtask_id}/{subtask_id}'
-
-
-def get_file_size_and_checksum(file_path):
-    with open(file_path, 'r') as file:
-        file_content = file.read()
-
-    return (
-        len(file_content),
-        'sha1:' + hashlib.sha1(file_content.encode()).hexdigest(),
-    )
