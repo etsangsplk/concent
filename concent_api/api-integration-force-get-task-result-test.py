@@ -3,14 +3,13 @@
 import os
 import sys
 import hashlib
-from base64 import b64encode
 from freezegun import freeze_time
 
 from golem_messages import message
-from golem_messages import shortcuts
 
 from utils.helpers import get_current_utc_timestamp
 from utils.helpers import get_storage_result_file_path
+from utils.helpers import upload_file_to_storage_cluster
 from api_testing_common import api_request
 from api_testing_common import assert_condition
 from api_testing_common import count_fails
@@ -51,24 +50,6 @@ def get_force_get_task_result(task_id, subtask_id, current_time, cluster_consts,
         )
 
     return force_get_task_result
-
-
-def upload_file_to_storage_cluster(file_content, file_path, upload_token):
-    dumped_upload_token = shortcuts.dump(upload_token, None, CONCENT_PUBLIC_KEY)
-    b64_encoded_token = b64encode(dumped_upload_token).decode()
-    headers = {
-        'Authorization': 'Golem ' + b64_encoded_token,
-        'Concent-Auth': b64encode(
-            create_client_auth_message(PROVIDER_PRIVATE_KEY, PROVIDER_PUBLIC_KEY, CONCENT_PUBLIC_KEY)).decode(),
-        'Concent-upload-path': file_path,
-        'Content-Type': 'application/octet-stream'
-    }
-    return requests.post(
-        "{}upload/".format(STORAGE_CLUSTER_ADDRESS),
-        headers=headers,
-        data=file_content,
-        verify=False
-    )
 
 
 @count_fails
@@ -123,7 +104,9 @@ def test_case_1_test_for_existing_file(cluster_consts, cluster_url, test_id):
     response = upload_file_to_storage_cluster(
         file_content,
         file_path,
-        force_get_task_result_upload.file_transfer_token
+        force_get_task_result_upload.file_transfer_token,
+        PROVIDER_PUBLIC_KEY,
+        PROVIDER_PRIVATE_KEY,
     )
 
     assert_condition(response.status_code, 200, 'File has not been stored on cluster')
@@ -204,7 +187,6 @@ def test_case_2_test_for_non_existing_file(cluster_consts, cluster_url, test_id)
 if __name__ == '__main__':
     try:
         from concent_api.settings import CONCENT_PUBLIC_KEY
-        from concent_api.settings import STORAGE_CLUSTER_ADDRESS
         run_tests(globals())
     except requests.exceptions.ConnectionError as exception:
         print("\nERROR: Failed connect to the server.\n", file=sys.stderr)

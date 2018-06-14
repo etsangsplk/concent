@@ -18,6 +18,7 @@ from core.transfer_operations import send_request_to_storage_cluster
 from gatekeeper.constants import CLUSTER_DOWNLOAD_PATH
 from utils.constants import ErrorCode
 from utils.decorators import provides_concent_feature
+from utils.helpers import upload_file_to_storage_cluster
 from .utils import clean_directory
 from .utils import delete_file
 from .utils import generate_blender_output_file_name
@@ -27,7 +28,6 @@ from .utils import prepare_storage_request_headers
 from .utils import run_blender
 from .utils import store_file_from_response_in_chunks
 from .utils import unpack_archive
-from .utils import upload_file_to_storage_cluster
 
 
 logger = logging.getLogger(__name__)

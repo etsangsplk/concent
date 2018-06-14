@@ -98,31 +98,6 @@ def delete_file(file_path):
         logger.warning(f'File with path {file_path} was not deleted, exception: {exception}')
 
 
-def upload_file_to_storage_cluster(file_content, file_path, upload_token):
-    dumped_upload_token = dump(upload_token, None, settings.CONCENT_PUBLIC_KEY)
-    base64_encoded_token = b64encode(dumped_upload_token).decode()
-    headers = {
-        'Authorization': 'Golem ' + base64_encoded_token,
-        'Concent-Auth': b64encode(
-            dump(
-                message.concents.ClientAuthorization(
-                    client_public_key=settings.CONCENT_PUBLIC_KEY,
-                ),
-                settings.CONCENT_PRIVATE_KEY,
-                settings.CONCENT_PUBLIC_KEY
-            ),
-        ).decode(),
-        'Concent-Upload-Path': file_path,
-        'Content-Type': 'application/octet-stream'
-    }
-    return requests.post(
-        "{}upload/".format(settings.STORAGE_CLUSTER_ADDRESS),
-        headers=headers,
-        data=file_content,
-        verify=False
-    )
-
-
 def generate_blender_output_file_name(scene_file):
     return f'{settings.VERIFIER_STORAGE_PATH}/out_{scene_file}'
 
