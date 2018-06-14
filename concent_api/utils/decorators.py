@@ -25,7 +25,7 @@ from core.exceptions import HashingAlgorithmError
 from core.exceptions import Http400
 
 from utils.helpers import join_messages
-from utils.logging import get_json_from_message_without_redundant_fields_for_logging
+from utils.logging import get_json_from_message_without_redundant_fields_for_logging, log_string_message
 from utils.logging import log_message_received_in_endpoint
 from utils.logging import log_json_message
 from utils.shortcuts                import load_without_public_key
@@ -44,15 +44,22 @@ def require_golem_auth_message(view):
     @wraps(view)
     def wrapper(request, *args, **kwargs):
         if request.content_type == '':
+            log_string_message(logger, 'error: Content-Type is missing')
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
         elif request.content_type == 'application/octet-stream':
             try:
                 auth_message = load_without_public_key(request.body)
                 if isinstance(auth_message, message.concents.ClientAuthorization):
                     validate_golem_message_signed_with_key(auth_message, auth_message.client_public_key)
+                    log_message_received_in_endpoint(logger,
+                                                     request.resolver_match.view_name if request.resolver_match is not None else None,
+                                                     auth_message.__class__.__name__,
+                                                     auth_message.client_public_key)
                 else:
+                    log_string_message(logger, 'error: Client Authentication message not included')
                     return JsonResponse({'error': 'Client Authentication message not included'}, status = 400)
             except Http400 as exception:
+                log_string_message(logger, f"'error: '{exception.error_message} 'error_code: '{exception.error_code.value}")
                 return JsonResponse(
                     {
                         'error': f'{exception.error_message}',
@@ -61,16 +68,22 @@ def require_golem_auth_message(view):
                     status=400
                 )
             except FieldError as exception:
+                log_string_message(logger, (join_messages('Golem Message contains wrong fields.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
             except MessageFromFutureError as exception:
+                log_string_message(logger, (join_messages('Message timestamp too far in the future.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Message timestamp too far in the future.', str(exception))}, status = 400)
             except MessageTooOldError as exception:
+                log_string_message(logger, (join_messages('Message is too old.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Message is too old.', str(exception))}, status = 400)
             except TimestampError as exception:
+                log_string_message(logger, (join_messages('Error:', exception.__class__.__name__)))
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
+                log_string_message(logger, (join_messages('Error in Golem Message.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Error in Golem Message.', str(exception))}, status = 400)
         else:
+            log_string_message(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
 
         return view(request, auth_message, auth_message.client_public_key, *args, *kwargs)
@@ -86,13 +99,19 @@ def require_golem_message(view):
     @wraps(view)
     def wrapper(request, *args, **kwargs):
         if request.content_type == '':
+            log_string_message(logger, 'error: Content-Type is missing')
             return JsonResponse({'error': 'Content-Type is missing.'}, status = 400)
         elif request.content_type == 'application/octet-stream':
             try:
                 golem_message = load_without_public_key(request.body)
                 assert golem_message is not None
                 client_public_key = get_validated_client_public_key_from_client_message(golem_message)
+                log_message_received_in_endpoint(logger,
+                                                 request.resolver_match.view_name if request.resolver_match is not None else None,
+                                                 golem_message.__class__.__name__,
+                                                 client_public_key)
             except Http400 as exception:
+                log_string_message(logger, f"'error: '{exception.error_message} 'error_code: '{exception.error_code.value}")
                 return JsonResponse(
                     {
                         'error': f'{exception.error_message}',
@@ -101,16 +120,22 @@ def require_golem_message(view):
                     status=400
                 )
             except FieldError as exception:
+                log_string_message(logger, (join_messages('Golem Message contains wrong fields.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Golem Message contains wrong fields.', str(exception))}, status = 400)
             except MessageFromFutureError as exception:
+                log_string_message(logger, (join_messages('Message timestamp too far in the future.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Message timestamp too far in the future.', str(exception))}, status = 400)
             except MessageTooOldError as exception:
+                log_string_message(logger, (join_messages('Message is too old.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Message is too old.', str(exception))}, status = 400)
             except TimestampError as exception:
+                log_string_message(logger, (join_messages('Error:', exception.__class__.__name__)))
                 return JsonResponse({'error': f'{exception}'}, status = 400)
             except MessageError as exception:
+                log_string_message(logger, (join_messages('Error in Golem Message.', exception.__class__.__name__)))
                 return JsonResponse({'error': join_messages('Error in Golem Message.', str(exception))}, status = 400)
         else:
+            log_string_message(logger, 'error: Concent supports only application/octet-stream.')
             return JsonResponse({'error': "Concent supports only application/octet-stream."}, status = 415)
 
         return view(request, golem_message, client_public_key, *args, *kwargs)
@@ -163,6 +188,7 @@ def handle_errors_and_responses(database_name):
                     logger,
                     response_from_view,
                     client_public_key,
+                    request.resolver_match._func_path if request.resolver_match is not None else None,
                 )
                 serialized_message = dump(
                     response_from_view,

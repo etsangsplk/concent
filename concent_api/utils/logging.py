@@ -3,6 +3,7 @@ from base64 import b64encode
 from logging import Logger
 from typing import Optional
 
+from django.http import JsonResponse
 from golem_messages.message import FileTransferToken
 from golem_messages.message import TaskToCompute
 from golem_messages.message.base import Message
@@ -40,13 +41,14 @@ def log_message_received(
 def log_message_returned(
     logger: Logger,
     response_message: Message,
-    client_public_key: bytes
+    client_public_key: bytes,
+    endpoint: str
 ):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, response_message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, response_message)
 
     logger.info(
-        f"A message has been returned from `send/` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- "
+        f"A message has been returned from `{endpoint}` -- MESSAGE_TYPE: {_get_message_type(response_message)} -- "
         f"TASK_ID: {task_id} -- "
         f"SUBTASK_ID: {subtask_id} -- "
         f"CLIENT PUBLIC KEY: {client_public_key}"
@@ -338,25 +340,25 @@ def log_message_received_in_endpoint(
     application_and_endpoint: str,
     message_type: str,
     client_public_key: bytes,
-    content_type: str,
-    task_id: str,
-    subtask_id: str
+    content_type: Optional[str] = None,
+    task_id: Optional[str] = None,
+    subtask_id: Optional[str] = None
 
 ):
 
     logger.info(
-        f'A message has been received in `{application_and_endpoint}/`. '
-        f'Message type: {message_type}. '
-        f'TASK_ID: {task_id}. '
-        f'SUBTASK_ID:{subtask_id}. '
-        f'CLIENT_PUBLIC_KEY: {client_public_key}. '
-        f'Content type: {content_type}. '
+        f'A message has been received in `{application_and_endpoint}/` '
+        f'Message type: {message_type} '
+        f'{"TASK_ID:" if task_id is not None else ""} {task_id if task_id is not None else ""}'
+        f'{" SUBTASK_ID:" if subtask_id is not None else ""} {subtask_id if subtask_id is not None else ""}'
+        f'CLIENT_PUBLIC_KEY: {client_public_key} '
+        f'{"Content type:" if content_type is not None else ""} {content_type if content_type is not None else ""} '
     )
 
 
 def log_json_message(
     logger,
-    message: json
+    message: JsonResponse
 ):
     logger.info(message)
 
@@ -388,7 +390,7 @@ def is_redundant_callable_or_golem_messages_field(golem_message, field_name):
 
 def get_json_from_message_without_redundant_fields_for_logging(
     golem_message: Message,
-) -> json:
+) -> JsonResponse:
 
     dictionary_to_serialize = serialize_message_to_dictionary(golem_message)
 
