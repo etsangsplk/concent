@@ -179,7 +179,7 @@ def blender_verification_order(
             upload_file_content = upload_file.read()
     except OSError as exception:
         logger.error(f'Uploading blender generated file to storage failed with: {exception}')
-        sentry_logger.error(exception)
+        sentry_logger.error(str(exception))
 
     if upload_file_content is not None:
         upload_file_size = len(upload_file_content)
