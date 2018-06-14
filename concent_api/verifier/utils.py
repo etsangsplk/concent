@@ -100,9 +100,9 @@ def delete_file(file_path):
 
 def upload_file_to_storage_cluster(file_content, file_path, upload_token):
     dumped_upload_token = dump(upload_token, None, settings.CONCENT_PUBLIC_KEY)
-    b64_encoded_token = b64encode(dumped_upload_token).decode()
+    base64_encoded_token = b64encode(dumped_upload_token).decode()
     headers = {
-        'Authorization': 'Golem ' + b64_encoded_token,
+        'Authorization': 'Golem ' + base64_encoded_token,
         'Concent-Auth': b64encode(
             dump(
                 message.concents.ClientAuthorization(
@@ -112,7 +112,7 @@ def upload_file_to_storage_cluster(file_content, file_path, upload_token):
                 settings.CONCENT_PUBLIC_KEY
             ),
         ).decode(),
-        'Concent-upload-path': file_path,
+        'Concent-Upload-Path': file_path,
         'Content-Type': 'application/octet-stream'
     }
     return requests.post(
@@ -124,8 +124,8 @@ def upload_file_to_storage_cluster(file_content, file_path, upload_token):
 
 
 def generate_blender_output_file_name(scene_file):
-    return f'{settings.VERIFIER_STORAGE_PATH}/{scene_file}_out'
+    return f'{settings.VERIFIER_STORAGE_PATH}/out_{scene_file}'
 
 
-def generate_upload_file_name(subtask_id):
-    return f'blender/verifier-output/{subtask_id}/{subtask_id}'
+def generate_upload_file_name(subtask_id, extension):
+    return f'blender/verifier-output/{subtask_id}/{subtask_id}.{extension.lower()}'
