@@ -30,7 +30,7 @@ from .utils import store_file_from_response_in_chunks
 from .utils import unpack_archive
 
 
-crash_logger = logging.getLogger('django.request')
+crash_logger = logging.getLogger('concent.crash')
 logger = logging.getLogger(__name__)
 
 
