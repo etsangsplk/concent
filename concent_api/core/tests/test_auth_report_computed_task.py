@@ -164,7 +164,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
+                report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=self.deserialized_task_to_compute,
                 )
             )
@@ -196,8 +196,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
-                    task_to_compute = task_to_compute,
+                report_computed_task = self._get_deserialized_report_computed_task(
+                    task_to_compute=task_to_compute,
                 )
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
@@ -226,7 +226,7 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task=message.ReportComputedTask(
+                report_computed_task=self._get_deserialized_report_computed_task(
                     task_to_compute=task_to_compute,
                 )
             )
@@ -261,8 +261,8 @@ class AuthReportComputedTaskIntegrationTest(ConcentIntegrationTestCase):
 
         with freeze_time("2017-12-01 11:00:05"):
             ack_report_computed_task = message.AckReportComputedTask(
-                report_computed_task = message.ReportComputedTask(
-                    task_to_compute = self.deserialized_task_to_compute,
+                report_computed_task=self._get_deserialized_report_computed_task(
+                    task_to_compute=self.deserialized_task_to_compute,
                 )
             )
         serialized_ack_report_computed_task = dump(ack_report_computed_task, self.REQUESTOR_PRIVATE_KEY, CONCENT_PUBLIC_KEY)
