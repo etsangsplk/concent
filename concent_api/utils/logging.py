@@ -10,7 +10,7 @@ from golem_messages.message.base import Message
 
 from core.models import Subtask
 from utils.constants import MessageIdField
-from utils.helpers import get_field_from_message
+from utils.helpers import get_field_from_message, join_messages
 
 
 def replace_element_to_unavailable_instead_of_none(log_function):
@@ -22,11 +22,7 @@ def replace_element_to_unavailable_instead_of_none(log_function):
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_received(
-    logger: Logger,
-    message: Message,
-    client_public_key: bytes
-):
+def log_message_received(logger: Logger, message: Message, client_public_key: bytes):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -56,11 +52,7 @@ def log_message_returned(
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_accepted(
-    logger: Logger,
-    message: Message,
-    client_public_key: bytes
-):
+def log_message_accepted(logger: Logger, message: Message, client_public_key: bytes):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -72,11 +64,7 @@ def log_message_accepted(
 
 
 @replace_element_to_unavailable_instead_of_none
-def log_message_added_to_queue(
-    logger: Logger,
-    message: Message,
-    client_public_key: bytes
-):
+def log_message_added_to_queue(logger: Logger, message: Message, client_public_key: bytes):
     task_id = _get_field_value_from_messages_for_logging(MessageIdField.TASK_ID, message)
     subtask_id = _get_field_value_from_messages_for_logging(MessageIdField.SUBTASK_ID, message)
     logger.info(
@@ -206,11 +194,7 @@ def log_stored_message_added_to_subtask(
     )
 
 
-def log_changes_in_subtask_states(
-    logger: Logger,
-    client_public_key: bytes,
-    count: int
-):
+def log_changes_in_subtask_states(logger: Logger, client_public_key: bytes, count: int):
     assert isinstance(count, int)
     logger.info(
         f'{count} {"subtask changed its" if count == 1 else "subtasks changed their"} state -- '
@@ -218,11 +202,7 @@ def log_changes_in_subtask_states(
     )
 
 
-def log_change_subtask_state_name(
-    logger: Logger,
-    old_state: str,
-    new_state: str
-):
+def log_change_subtask_state_name(logger: Logger, old_state: str, new_state: str):
     logger.info(f'Subtask changed its state from {old_state} to {new_state}')
 
 
@@ -280,11 +260,7 @@ def log_file_status(
     )
 
 
-def log_request_received(
-    logger: Logger,
-    path_to_file: str,
-    operation: FileTransferToken.Operation
-):
+def log_request_received(logger: Logger, path_to_file: str, operation: FileTransferToken.Operation):
     logger.info(f"{operation.capitalize()} request received. Path to file: '{path_to_file}'")
 
 
@@ -343,9 +319,7 @@ def log_message_received_in_endpoint(
     content_type: Optional[str] = None,
     task_id: Optional[str] = None,
     subtask_id: Optional[str] = None
-
 ):
-
     logger.info(
         f'A message has been received in `{application_and_endpoint}/` '
         f'Message type: {message_type} '
@@ -356,41 +330,31 @@ def log_message_received_in_endpoint(
     )
 
 
-def log_json_message(
-    logger,
-    message: JsonResponse
-):
+def log_json_message(logger: Logger, message: JsonResponse):
     logger.info(message)
 
 
-def log_string_message(
-    logger,
-    message: str
-):
-    logger.info(message)
+def log_string_message(logger: Logger, *messages_to_log: str):
+    logger.info(join_messages(messages_to_log))
 
 
-def _get_field_value_from_messages_for_logging(
-    field_name: MessageIdField,
-    message: Message
-) -> str:
+def _get_field_value_from_messages_for_logging(field_name: MessageIdField, message: Message) -> str:
     value = get_field_from_message(message, field_name.value) if isinstance(message, Message) else '-not available- '
     return value if value is not None else '-not available- '
 
 
-def _get_message_type(
-    message: Message
-) -> str:
+def _get_message_type(message: Message) -> str:
     return type(message).__name__ if isinstance(message, Message) else '-not available- '
 
 
-def is_redundant_callable_or_golem_messages_field(golem_message, field_name):
-    return False if isinstance(getattr(golem_message, field_name), Message) else callable(getattr(golem_message, field_name))
+def is_redundant_field(golem_message: Message, field_name: str):
+    if isinstance(getattr(golem_message, field_name), Message) or field_name.startswith('_') or field_name.isupper():
+        return False
+    else:
+        return callable(getattr(golem_message, field_name))
 
 
-def get_json_from_message_without_redundant_fields_for_logging(
-    golem_message: Message,
-) -> JsonResponse:
+def get_json_from_message_without_redundant_fields_for_logging(golem_message: Message) -> JsonResponse:
 
     dictionary_to_serialize = serialize_message_to_dictionary(golem_message)
 
@@ -402,11 +366,8 @@ def get_json_from_message_without_redundant_fields_for_logging(
     return json.dumps(dictionary_to_serialize, indent=4)
 
 
-def serialize_message_to_dictionary(
-    golem_message: Message,
-)->dict:
-
-    fields_to_serialize = [f for f in dir(golem_message) if not f.startswith('_') and not f.isupper() and not is_redundant_callable_or_golem_messages_field(golem_message, f)]
+def serialize_message_to_dictionary(golem_message: Message) -> dict:
+    fields_to_serialize = [f for f in golem_message.__slots__ if not is_redundant_field(golem_message, f)]
 
     golem_messages_instances = []
 
@@ -428,10 +389,7 @@ def serialize_message_to_dictionary(
     return dict_to_serialize
 
 
-def _get_field_value_and_encode_if_bytes_from_message(
-    field_name: str,
-    golem_message: Message
-)->str:
+def _get_field_value_and_encode_if_bytes_from_message(field_name: str, golem_message: Message) -> str:
     value = get_field_from_message(golem_message, field_name)
 
     if isinstance(value, bytes):
