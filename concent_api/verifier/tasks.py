@@ -30,8 +30,8 @@ from .utils import store_file_from_response_in_chunks
 from .utils import unpack_archive
 
 
+crash_logger = logging.getLogger('django.request')
 logger = logging.getLogger(__name__)
-sentry_logger = logging.getLogger('django.request')
 
 
 @shared_task
@@ -178,8 +178,7 @@ def blender_verification_order(
         with open(os.path.join(settings.VERIFIER_STORAGE_PATH, blender_output_file_name), 'r') as upload_file:
             upload_file_content = upload_file.read()
     except OSError as exception:
-        logger.error(f'Uploading blender generated file to storage failed with: {exception}')
-        sentry_logger.error(str(exception))
+        crash_logger.error(str(exception))
 
     if upload_file_content is not None:
         upload_file_size = len(upload_file_content)
