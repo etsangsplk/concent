@@ -1010,9 +1010,10 @@ def handle_messages_from_database(
         return response_to_client
 
     elif pending_response.response_type == PendingResponse.ResponseType.SubtaskResultsRejected.name:  # pylint: disable=no-member
-        subtask_results_rejected = deserialize_message(pending_response.subtask.subtask_results_rejected.data.tobytes())
-        response_to_client = message.concents.ForceSubtaskResultsResponse(
-            subtask_results_rejected = subtask_results_rejected,
+        report_computed_task = deserialize_message(pending_response.subtask.report_computed_task.data.tobytes())
+        response_to_client = message.tasks.SubtaskResultsRejected(
+            reason=message.tasks.SubtaskResultsRejected.REASON.ResourcesFailure,
+            report_computed_task=report_computed_task
         )
         mark_message_as_delivered_and_log(pending_response, response_to_client)
         return response_to_client
