@@ -29,9 +29,7 @@ from utils.logging import get_json_from_message_without_redundant_fields_for_log
 from utils.logging import log_json_message
 from utils.logging import log_message_received_in_endpoint
 from utils.logging import log_string_message
-
 from utils.shortcuts                import load_without_public_key
-
 from utils                          import logging
 
 logger = getLogger(__name__)
@@ -114,7 +112,10 @@ def require_golem_message(view):
                     logger,
                     request.resolver_match.view_name if request.resolver_match is not None else None,
                     golem_message.__class__.__name__,
-                    client_public_key
+                    client_public_key,
+                    request.META['CONTENT_TYPE'] if 'CONTENT_TYPE' in request.META.keys() else None,
+                    golem_message.task_id if 'task_id' in dir(golem_message) else None,
+                    golem_message.subtask_id if 'subtask_id' in dir(golem_message) else None
                 )
             except Http400 as exception:
                 log_string_message(logger, f"error_code: {exception.error_code.value} error: {exception.error_message} ")
@@ -270,21 +271,8 @@ def log_communication(view):
 
     @wraps(view)
     def wrapper(request, golem_message, client_public_key):
-
-        application_name_and_endpoint = request.resolver_match.view_name
-        content_type = request.META['CONTENT_TYPE'] if 'CONTENT_TYPE' in request.META.keys() else None
-        message_type = golem_message.__class__.__name__ if golem_message is not None else '-not available'
-
-        task_id = golem_message.task_id if 'task_id' in golem_message.__slots__ else '-not available'
-        subtask_id = golem_message.subtask_id if 'subtask_id' in golem_message.__slots__ else '-not available'
-
         json_message_to_log = get_json_from_message_without_redundant_fields_for_logging(golem_message)
-        log_message_received_in_endpoint(
-            logger, application_name_and_endpoint, message_type, client_public_key, content_type, task_id, subtask_id
-        )
         log_json_message(logger, json_message_to_log)
-
         response_from_view = view(request,  golem_message, client_public_key)
-
         return response_from_view
     return wrapper

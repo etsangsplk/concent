@@ -5,12 +5,12 @@ from typing import Optional
 
 from django.http import JsonResponse
 from golem_messages.message import FileTransferToken
-from golem_messages.message import TaskToCompute
 from golem_messages.message.base import Message
 
 from core.models import Subtask
 from utils.constants import MessageIdField
-from utils.helpers import get_field_from_message, join_messages
+from utils.helpers import get_field_from_message
+from utils.helpers import join_messages
 
 
 def replace_element_to_unavailable_instead_of_none(log_function):
@@ -323,10 +323,10 @@ def log_message_received_in_endpoint(
     logger.info(
         f'A message has been received in `{application_and_endpoint}/` '
         f'Message type: {message_type} '
-        f'{"TASK_ID:" if task_id is not None else ""} {task_id if task_id is not None else ""}'
-        f'{" SUBTASK_ID:" if subtask_id is not None else ""} {subtask_id if subtask_id is not None else ""}'
+        f'{"TASK_ID:" + task_id if task_id is not None else ""}'
+        f'{" SUBTASK_ID: "  + subtask_id if subtask_id is not None else ""} '
         f'CLIENT_PUBLIC_KEY: {client_public_key} '
-        f'{"Content type:" if content_type is not None else ""} {content_type if content_type is not None else ""} '
+        f'{"Content type:" + content_type if content_type is not None else ""} '
     )
 
 
@@ -347,35 +347,18 @@ def _get_message_type(message: Message) -> str:
     return type(message).__name__ if isinstance(message, Message) else '-not available- '
 
 
-def is_redundant_field(golem_message: Message, field_name: str):
-    if isinstance(getattr(golem_message, field_name), Message) or field_name.startswith('_') or field_name.isupper():
-        return False
-    else:
-        return callable(getattr(golem_message, field_name))
-
-
 def get_json_from_message_without_redundant_fields_for_logging(golem_message: Message) -> JsonResponse:
-
     dictionary_to_serialize = serialize_message_to_dictionary(golem_message)
-
-    for field in dir(golem_message):
-        if isinstance(getattr(golem_message, field), TaskToCompute):
-            task_to_compute_dictionary = serialize_message_to_dictionary(getattr(golem_message, field))
-            dictionary_to_serialize.update({field: task_to_compute_dictionary})
-
     return json.dumps(dictionary_to_serialize, indent=4)
 
 
 def serialize_message_to_dictionary(golem_message: Message) -> dict:
-    fields_to_serialize = [f for f in golem_message.__slots__ if not is_redundant_field(golem_message, f)]
+    fields_to_serialize = [f for f in golem_message.__slots__]
 
     golem_messages_instances = []
 
     for field_name in fields_to_serialize:
-        if isinstance(getattr(golem_message, field_name), TaskToCompute):
-            fields_to_serialize.remove(field_name)
-
-        elif isinstance(getattr(golem_message, field_name), Message):
+        if isinstance(getattr(golem_message, field_name), Message):
             golem_messages_instances.append(getattr(golem_message, field_name))
             fields_to_serialize.remove(field_name)
 
